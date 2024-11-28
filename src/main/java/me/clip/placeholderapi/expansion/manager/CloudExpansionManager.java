@@ -2,7 +2,7 @@
  * This file is part of PlaceholderAPI
  *
  * PlaceholderAPI
- * Copyright (c) 2015 - 2021 PlaceholderAPI Team
+ * Copyright (c) 2015 - 2024 PlaceholderAPI Team
  *
  * PlaceholderAPI free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -60,7 +60,7 @@ import org.jetbrains.annotations.Unmodifiable;
 public final class CloudExpansionManager {
 
   @NotNull
-  private static final String API_URL = "http://api.extendedclip.com/v2/";
+  private static final String API_URL = "http://api.placeholderapi.net/v2/";
 
   @NotNull
   private static final Gson GSON = new Gson();
@@ -170,7 +170,7 @@ public final class CloudExpansionManager {
     await.clear();
   }
 
-  public void fetch(final boolean allowUnverified) {
+  public void fetch() {
     plugin.getLogger().info("Fetching available expansion information...");
 
     ASYNC_EXECUTOR.submit(
@@ -190,9 +190,6 @@ public final class CloudExpansionManager {
                   || expansion.getVersion(expansion.getLatestVersion()) == null) {
                 toRemove.add(entry.getKey());
               }
-              if (!allowUnverified && !expansion.isVerified()) {
-                toRemove.add(entry.getKey());
-              }
             }
 
             for (String name : toRemove) {
@@ -203,11 +200,17 @@ public final class CloudExpansionManager {
             plugin.getLogger().log(Level.WARNING, "Failed to download expansion information", e);
           }
 
-          //todo: Figure out why this was being scheduled back on the main thread
-          try {
-            for (Map.Entry<String, CloudExpansion> entry : values.entrySet()) {
-              String name = entry.getKey();
-              CloudExpansion expansion = entry.getValue();
+          // loop through what's left on the main thread
+          plugin
+              .getServer()
+              .getScheduler()
+              .runTask(
+                  plugin,
+                  () -> {
+                    try {
+                      for (Map.Entry<String, CloudExpansion> entry : values.entrySet()) {
+                        String name = entry.getKey();
+                        CloudExpansion expansion = entry.getValue();
 
               expansion.setName(name);
 
@@ -222,14 +225,15 @@ public final class CloudExpansionManager {
                 }
               }
 
-              cache.put(toIndexName(expansion), expansion);
-            }
-          } catch (Throwable e) {
-            // ugly swallowing of every throwable, but we have to be defensive
-            plugin
-                    .getLogger()
-                    .log(Level.WARNING, "Failed to download expansion information", e);
-          }
+                        cache.put(toIndexName(expansion), expansion);
+                      }
+                    } catch (Throwable e) {
+                      // ugly swallowing of every throwable, but we have to be defensive
+                      plugin
+                          .getLogger()
+                          .log(Level.WARNING, "Failed to download expansion information", e);
+                    }
+                  });
         });
   }
 
