@@ -38,8 +38,8 @@ dependencies {
 
 
 java {
-    sourceCompatibility = JavaVersion.VERSION_1_8
-    targetCompatibility = JavaVersion.VERSION_1_8
+    sourceCompatibility = JavaVersion.VERSION_17 // this is temp
+    targetCompatibility = JavaVersion.VERSION_17 // this is temp
 
     withJavadocJar()
     withSourcesJar()
